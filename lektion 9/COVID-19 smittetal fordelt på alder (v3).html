@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Smittetal visualisering</title>
+		<script type="text/javascript" src="d3.js"></script>
+		<link rel="stylesheet" href="styles.css">
+
+	</head>
+	<body>
+		
+		<h1>COVID-19 smittetal fordelt efter aldersgrupper</h1>
+		<p>Tryk på knapperne for at få vist smittetallene for den valgte måned</p><br>
+
+		<table>
+            <tr>
+				<th>2020</th>
+				<th>2021</th>
+			</tr>
+			<tr>
+                <td>
+					<button class="updateAug" >august</button>
+					<button class="updateSep" >september</button>
+					<button class="updateOkt" >oktober</button>
+					<button class="updateNov" >november</button>
+					<button class="updateDec" >december</button>
+				</td>
+				<td>
+					<button class="updateJan" >januar</button>
+					<button class="updateFeb" >februar</button>
+					<button class="updateMar" >marts</button>
+				</td>
+			</tr>
+
+
+		<script type="text/javascript">
+
+			// Indlæsning af csv-filen
+				d3.csv("aarhus-covid19-smittetal-fordelt-på-alder.csv").then(function(data) {
+
+
+    		// 'month' bestemmer hvilken måned, data skal hentes fra, når filen indlæses af hjemmesiden første gang. Hvis strengen er tom, vises der intet, når files indlæses.
+			// Efter data er indlæst, bruges 'month' af knapperne til at køre 'showMonth()'-funktionen med data fra den valgte måned.
+					let month = [""]
+
+
+			// Definering af dataset med 10 værdier. 10 værdier fordi vi har 10 aldersgrupper.
+					let dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+
+
+    		// Definering af "ageGroup"-arrayet, der indeholder alle aldersgrupperne
+					let ageGroup    = [ "0-10" , "11-20", "21-30", "31-40", "41-50", 
+                                		"51-60", "61-70", "71-80", "81-90", "91+"    ];
+
+			// Definering af "months"-objektet, som bruges, så vi kan vælge data fra en måned (f.eks. "2020-08") ved blot at skrive navnet på denne måned (f.eks. "august").
+            		let months      = { august: 	"2020-08",
+		                                september: 	"2020-09",
+        		                        oktober: 	"2020-10",
+                		                november: 	"2020-11", 
+                        		        december: 	"2020-12",
+                                		januar: 	"2021-01",
+		                                februar: 	"2021-02",
+        		                        marts: 		"2021-03" };
+
+
+//---------------------------------------------------------------------------------------------------
+// Visualisering
+//---------------------------------------------------------------------------------------------------
+
+			// Bredde, højde og padding
+			        let w = 650;
+			        let h = 650;
+					let padding = 80;
+
+		    // Definerer x- og y-skalaer  
+					let xScale = d3.scaleBand()
+								.domain(d3.range(dataset.length))
+								.rangeRound([0, w])						// Afrunder tallene
+								.paddingInner(0.05);
+
+					let yScale = d3.scaleLinear()
+								.domain([0, 1810])
+								.range([0, h - padding]);
+
+			// Farve skalaer; rød, grøn, blå
+					let colorScaleR = d3.scaleLinear()
+								.domain([0, 400, 1800])
+								.range([64, 200, 240])
+
+					let colorScaleG = d3.scaleLinear()
+								.domain([1800, 400, 0])
+								.range([64, 200, 240])
+
+
+			// Laver et SVG-element
+        			let svg = d3.select("body")
+		        				.append("svg")
+				        		.attr("width", w)
+						        .attr("height", h);
+
+			// Laver en baggrund til SVG-elementet
+						svg.selectAll("rect.background")
+								.data(month)
+								.enter()
+								.append("rect")
+								.attr("x", "0")
+								.attr("y", h - "80")
+								.attr("width", w)
+								.attr("height", h)
+								.attr("fill", "rgb(0, 0, 0, 0.1)")
+								.attr("class", "background");
+
+
+			// Laver alle bjælkerne til bar chart
+	            		svg.selectAll("rect.bars")
+			                    .data(dataset)
+                                .enter()
+                                .append("rect")
+                    		    .attr("x", function(d, i) {				// d is the current datum, i is its index value (0, 1, 2, 3, ...)
+										return xScale(i);
+			                    })
+			                    .attr("y", function(d) {
+										return h - yScale(d) - padding;
+			                    })
+			                    .attr("width", xScale.bandwidth())
+			                    .attr("height", function(d) {
+										return yScale(d);
+			                    })
+								.attr("class", "bars");
+
+
+			// Laver labels til smittetallene
+                        svg.selectAll("text.num")
+			                    .data(dataset)
+                			    .enter()
+			                    .append("text")
+			                    .text(function(d) {
+			   		                	return d;
+			                    })
+			                    .attr("x", function(d, i) {
+										return xScale(i) + xScale.bandwidth() / 2;
+			                    })
+			                    .attr("y", function(d) {
+									if (d <= 100) {									// Hvis dataværdien er lig eller mindre end 100, vises den over bjælken
+					   					return (h - yScale(d) - 6) - padding;
+									} else {										// Hvis dataværdien er mere end 100, vises den inde i selve bjælken
+										return (h - yScale(d) + 20) - padding;
+									}
+			                    })
+			                    .attr("font-family", "sans-serif")
+			                    .attr("font-size", "18px")
+								.attr("font-weight", "bold")
+								.attr("text-anchor", "middle")
+								.attr("fill", function(d) {
+									if (d == 0) {
+					   					return "gray";
+									} else if (d <= 100) {
+										return "black";
+									} else {
+										return "white";
+									}
+						   		})
+								.attr("class", "num");
+
+
+    		// Laver etiketter for 'ageGroups' (statiske)
+						svg.selectAll("text.labelAgeGroups")
+                            	.data(ageGroup)
+	                            .enter()
+	                            .append("text")
+    	                        .text(function(d) {
+        		                        return d;
+                	            })
+                    	        .attr("x", function(d, i) {
+										return xScale(i) + xScale.bandwidth() / 2;
+	                            })
+    	                        .attr("y", function(d) {
+        		                        return h + 30 - padding;
+	                            })
+    	                        .attr("font-family", "sans-serif")
+        	                    .attr("font-size", "16px")
+            	                .attr("font-weight", "bold")
+                	            .attr("text-anchor", "middle")
+                    	        .attr("fill", "rgb(60, 60, 60)")
+                        	    .attr("class", "labelAgeGroups");
+
+
+			// Laver en etiket for navnet på den valgte måned
+						svg.selectAll("text.month")
+                            	.data(month)
+	                            .enter()
+    	                        .append("text")
+        	                    .text(function(d) {
+            		                    return d;
+	                            })
+    	                        .attr("x", function(d, i) {
+        		                        return w / 2;
+                	            })
+                    	        .attr("y", function(d) {
+                        		        return h - 15;
+	                            })
+    	                        .attr("font-family", "segoe ui")
+        	                    .attr("font-size", "24px")
+            	                .attr("font-weight", "bold")
+                	            .attr("fill", "rgb(45, 46, 49)")
+                    	        .attr("text-anchor", "middle")
+                        	    .attr("class", "month");
+
+//---------------------------------------------------------------------------------------------------
+// Definering af funktioner, der bruges til at visualisere data for hver måned
+//---------------------------------------------------------------------------------------------------
+
+			// Definerer 'show'-funktionen, som vi skal bruge til at lave visualiseringen, når der skiftes til en ny måned
+				function showMonth() {
+					for (let smittetal of data) {
+						let rowDate     = smittetal["date"];
+						let rowAge      = smittetal["age"];
+						let rowCount    = smittetal["count"];
+
+	  				if (rowDate.includes(months[month])) {
+		  				for (let i = 0; i < ageGroup.length; i++) {
+							if (rowAge.includes(ageGroup[i])) {
+								dataset[i] = dataset[i] + parseInt(rowCount)
+							}
+						}
+					}
+
+					}
+				} // <-- slutningen på 'showMonth'-funktionen
+
+			// Definerer 'updateData'-funktionen, som opdaterer data visualiseringen
+				function updateData() {
+
+				// Opdaterer alle 'rects' (bjælkerne)
+						svg.selectAll("rect.bars")
+								.data(dataset)
+								.transition()
+								.delay(function(d, i) {
+										return i / dataset.length * 1000;
+								})
+								.duration(500)
+								.ease(d3.easeCubicInOut)
+								.attr("y", function(d) {
+										return h - yScale(d) - padding;
+								})
+								.attr("height", function(d) {
+										return yScale(d);
+								})
+								.attr("fill", function(d) {
+										return "rgb("+ colorScaleR(d) + "," + colorScaleG(d) + ", 80)";		// Skifter bjælkernes farve fra grøn (lave værdier) til rød (høje værdier)
+								});
+
+
+				// Opdaterer alle 'num'-labels
+						svg.selectAll("text.num")
+				    			.data(dataset)
+								.text(function(d) {
+					   					return d;
+					   			})
+					   			.transition()
+								.delay(function(d, i) {
+										return i / dataset.length * 1000;
+								})
+								.duration(500)
+								.ease(d3.easeCubicInOut)
+								.attr("x", function(d, i) {
+										return xScale(i) + xScale.bandwidth() / 2;
+			                    })
+					   			.attr("y", function(d) {
+									if (d <= 100) {									// Hvis dataværdien er lig eller mindre end 100, vises den over bjælken
+					   					return (h - yScale(d) - 8) - padding;
+									} else {										// Hvis dataværdien er mere end 100, vises den inde i selve bjælken
+										return (h - yScale(d) + 22) - padding;
+									}
+								})
+								.attr("fill", function(d) {
+									if (d == 0) {
+					   					return "gray";
+									} else if (d <= 100) {
+										return "black";
+									} else {
+										return "white";
+									}
+						   		});
+
+
+				// Opdaterer 'month'-label
+						svg.selectAll("text.month")
+				    			.data(month)
+								.text(function(d) {
+					   					return d;
+						   		});
+
+
+				} // <-- slutningen på 'updateData'-funktionen
+
+
+		// Når der trykkes på en knap, køres en af nedenstående events. Hver knap har sit eget event, hvor: 
+		// 'dataset' nulstilles, 'month' sættes til den nye måned, hvorefter de to funktioner køres, for at visualisere den nye data.
+
+			// Opdaterer bar chart med data fra august
+						d3.select("button.updateAug")
+ 								.on("click", function() {
+									dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+									month = ["august"]
+
+									showMonth()
+									updateData()
+								 });
+
+			// Opdaterer bar chart med data fra september
+						d3.select("button.updateSep")
+ 								.on("click", function() {
+									dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+									month = ["september"]
+
+									showMonth()
+									updateData()
+								 });
+
+			// Opdaterer bar chart med data fra oktober
+						d3.select("button.updateOkt")
+ 								.on("click", function() {
+									dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+									month = ["oktober"]
+
+									showMonth()
+									updateData()
+								 });
+
+			// Opdaterer bar chart med data fra november
+						d3.select("button.updateNov")
+ 								.on("click", function() {
+									dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+									month = ["november"]
+
+									showMonth()
+									updateData()
+								 });
+
+			// Opdaterer bar chart med data fra december
+						d3.select("button.updateDec")
+ 								.on("click", function() {
+									dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+									month = ["december"]
+
+									showMonth()
+									updateData()
+								 });
+
+			// Opdaterer bar chart med data fra januar
+						d3.select("button.updateJan") 
+ 								.on("click", function() {
+									dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+									month = ["januar"]
+
+									showMonth()
+									updateData()
+								 });
+
+			// Opdaterer bar chart med data fra februar
+						d3.select("button.updateFeb")
+ 								.on("click", function() {
+									dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+									month = ["februar"]
+
+									showMonth()
+									updateData()
+								 });
+
+			// Opdaterer bar chart med data fra marts
+						d3.select("button.updateMar")
+ 								.on("click", function() {
+									dataset   = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+									month = ["marts"]
+
+									showMonth()
+									updateData()
+								 });
+
+		}); // slutningen på indlæsningen af csv-filen
+
+		</script>
+
+	</body>
+</html>

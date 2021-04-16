@@ -1,0 +1,63 @@
+<html>
+  <head>
+	  <meta charset="utf-8">
+    <title>D3-eksempel</title>
+    <script type="text/javascript" src="d3.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+			// data
+			let dataset = [
+  [  50,  20, "red" ], [ 100,  20, "red" ], [ 150,  20, "red" ],
+  [ 200,  20, "red" ], [ 250,  20, "red" ], [  50,  60, "red" ],
+  [ 100,  60, "blue" ], [ 150,  60, "red" ], [ 200,  60, "blue" ],
+  [ 250,  60, "red" ], [  50, 100, "red" ], [ 100, 100, "red" ],
+  [ 150, 100, "red" ], [ 200, 100, "red" ], [ 250, 100, "red" ],
+  [  50, 140, "red" ], [ 100, 140, "green" ], [ 150, 140, "green" ],
+  [ 200, 140, "green" ], [ 250, 140, "red" ], [  50, 180, "red" ],
+  [ 100, 180, "red" ], [ 150, 180, "red" ], [ 200, 180, "red" ],
+  [ 250, 180, "red" ],
+];
+
+
+			// Width and height and padding
+			let w = 300;
+			let h = 300;
+			let padding = 20;
+			
+           //create scale functions
+		       let xScale = d3.scaleLinear()
+			   .domain([d3.min(dataset, function(d) { return d[1]; }), d3.max(dataset, function(d) {return d[0]; })])
+			   .range([padding, w - padding]);
+
+			   let yScale = d3.scaleLinear()
+			   .domain([d3.min(dataset, function(d) { return d[1]; }), d3.max(dataset, function(d) {return d[1]; })])
+			   .range([padding, h - padding]);
+
+			// Create SVG element
+			let svg = d3.select("body")
+						.append("svg")
+						.attr("width", w)
+						.attr("height", h);
+
+			// Generate circles to create scatterplot
+			svg.selectAll("Circle")
+			   .data(dataset)
+			   .enter()
+			   .append("circle")
+			   .attr("cx", function(d) {       // x-axis
+			   		return xScale(d[0]);
+			   })
+			   .attr("cy", function(d) {
+			   		return yScale(d[1]);       // y-axis
+			   })
+			   .attr("r", function(d) {         // Radius
+				   return Math.sqrt(h - d[1]);  // the lower the y-value of the circles, the bigger the circle
+			   }) 
+			   .attr("fill", function(d) {
+				   return d[2] });              // color of the circles
+
+			
+    </script>
+  </body>
+</html>
